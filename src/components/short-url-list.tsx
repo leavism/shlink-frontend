@@ -47,21 +47,61 @@ import { Label } from '@/components/ui/label';
 import { getShortUrls, deleteShortUrl, getVisits, getQrCode, updateShortUrl } from '@/lib/api-service';
 import { ShortUrl, Visit } from '@/types/api';
 
+// Helper functions to parse user agent strings
+function parseBrowser(userAgent: string): string {
+  if (!userAgent) return 'Unknown';
+
+  const browserRegexes = [
+    { name: 'Firefox', regex: /Firefox\/([0-9.]+)/ },
+    { name: 'Chrome', regex: /Chrome\/([0-9.]+)/ },
+    { name: 'Safari', regex: /Safari\/([0-9.]+)/ },
+    { name: 'Edge', regex: /Edg(e)?\/([0-9.]+)/ },
+    { name: 'Internet Explorer', regex: /MSIE|Trident/ }
+  ];
+
+  for (const browser of browserRegexes) {
+    if (browser.regex.test(userAgent)) {
+      return browser.name;
+    }
+  }
+
+  return 'Unknown';
+}
+
+function parseOS(userAgent: string): string {
+  if (!userAgent) return 'Unknown';
+
+  const osRegexes = [
+    { name: 'Windows', regex: /Windows NT/ },
+    { name: 'macOS', regex: /Mac OS X/ },
+    { name: 'iOS', regex: /iPhone|iPad|iPod/ },
+    { name: 'Android', regex: /Android/ },
+    { name: 'Linux', regex: /Linux/ }
+  ];
+
+  for (const os of osRegexes) {
+    if (os.regex.test(userAgent)) {
+      return os.name;
+    }
+  }
+
+  return 'Unknown';
+}
+
 interface QrCodeDialogProps {
   shortUrl: ShortUrl | null;
   apiUrl: string;
-  apiKey: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
 // QR Code Dialog component
-const QrCodeDialog: FC<QrCodeDialogProps> = ({ shortUrl, apiUrl, apiKey, isOpen, onClose }) => {
+const QrCodeDialog: FC<QrCodeDialogProps> = ({ shortUrl, apiUrl, isOpen, onClose }) => {
   const [size, setSize] = useState<number>(300);
 
   if (!shortUrl) return null;
 
-  const qrCodeUrl = getQrCode(apiUrl, apiKey, shortUrl.shortCode, {
+  const qrCodeUrl = getQrCode(apiUrl, shortUrl.shortCode, {
     size,
     domain: shortUrl.domain || undefined
   });
@@ -348,11 +388,11 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visits.map((visit) => (
-                    <TableRow key={visit.id}>
+                  {visits.map((visit, index) => (
+                    <TableRow key={`${visit.date}-${index}`}>
                       <TableCell>{formatDate(visit.date)}</TableCell>
-                      <TableCell>{visit.browser || 'Unknown'}</TableCell>
-                      <TableCell>{visit.os || 'Unknown'}</TableCell>
+                      <TableCell>{parseBrowser(visit.userAgent)}</TableCell>
+                      <TableCell>{parseOS(visit.userAgent)}</TableCell>
                       <TableCell>
                         {visit.visitLocation ? (
                           `${visit.visitLocation.countryName || ''} ${visit.visitLocation.cityName || ''}`
@@ -425,10 +465,11 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
 interface ShortUrlListProps {
   apiUrl: string;
   apiKey: string;
+  onViewStats?: (shortCode: string) => void;
 }
 
 // Main ShortUrlList component
-export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey }) => {
+export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStats }) => {
   const [shortUrls, setShortUrls] = useState<ShortUrl[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
@@ -495,6 +536,12 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey }) => {
   const handleCopyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
     // Add toast notification here if needed
+  };
+
+  const handleViewStats = (shortCode: string) => {
+    if (onViewStats) {
+      onViewStats(shortCode);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -611,6 +658,21 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey }) => {
                               <TooltipContent>Analytics</TooltipContent>
                             </Tooltip>
 
+                            {onViewStats && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleViewStats(url.shortCode)}
+                                  >
+                                    <BarChartIcon className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>View Stats</TooltipContent>
+                              </Tooltip>
+                            )}
+
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -701,7 +763,6 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey }) => {
       <QrCodeDialog
         shortUrl={selectedUrl}
         apiUrl={apiUrl}
-        apiKey={apiKey}
         isOpen={isQrDialogOpen}
         onClose={() => setIsQrDialogOpen(false)}
       />

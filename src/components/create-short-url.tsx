@@ -24,7 +24,12 @@ import { createShortUrl, getTags } from '@/lib/api-service';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { CreateShortUrlOptions, ShortUrl, Tag } from '@/types/api';
+import { CreateShortUrlOptions, ShortUrl } from '@/types/api';
+
+interface TagInfo {
+  name: string;
+  count?: number;
+}
 
 interface CreateShortUrlProps {
   apiUrl: string;
@@ -47,7 +52,7 @@ export const CreateShortUrl: FC<CreateShortUrlProps> = ({ apiUrl, apiKey, onSucc
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [createdUrl, setCreatedUrl] = useState<ShortUrl | null>(null);
-  const [existingTags, setExistingTags] = useState<Tag[]>([]);
+  const [existingTags, setExistingTags] = useState<TagInfo[]>([]);
 
   useEffect(() => {
     if (apiUrl && apiKey) {
@@ -58,7 +63,14 @@ export const CreateShortUrl: FC<CreateShortUrlProps> = ({ apiUrl, apiKey, onSucc
   const fetchExistingTags = async () => {
     try {
       const result = await getTags(apiUrl, apiKey);
-      setExistingTags(result.tags.data || []);
+
+      // Convert the tags data to TagInfo format
+      const tagsData: TagInfo[] = result.tags.data.map(tagName => ({
+        name: tagName,
+        count: result.tags.stats?.[tagName]
+      }));
+
+      setExistingTags(tagsData);
     } catch (error) {
       console.error('Failed to fetch tags:', error);
       toast.error('Failed to fetch tags');
@@ -323,14 +335,17 @@ export const CreateShortUrl: FC<CreateShortUrlProps> = ({ apiUrl, apiKey, onSucc
                   <div className="flex flex-wrap gap-1">
                     {existingTags.map((tag) => (
                       <Badge
-                        key={tag.tag}
+                        key={tag.name}
                         variant="outline"
-                        className={`cursor-pointer ${selectedTags.includes(tag.tag) ? 'bg-primary/10' : ''
+                        className={`cursor-pointer ${selectedTags.includes(tag.name) ? 'bg-primary/10' : ''
                           }`}
-                        onClick={() => handleUseExistingTag(tag.tag)}
+                        onClick={() => handleUseExistingTag(tag.name)}
                       >
-                        {tag.tag}
-                        {selectedTags.includes(tag.tag) && (
+                        {tag.name}
+                        {tag.count !== undefined && tag.count > 0 && (
+                          <span className="ml-1 text-xs text-gray-500">({tag.count})</span>
+                        )}
+                        {selectedTags.includes(tag.name) && (
                           <Check className="ml-1 h-3 w-3" />
                         )}
                       </Badge>
@@ -455,4 +470,4 @@ export const CreateShortUrl: FC<CreateShortUrlProps> = ({ apiUrl, apiKey, onSucc
       )}
     </Card>
   );
-};;
+};

@@ -263,10 +263,11 @@ const StatsSummary: FC<StatsSummaryProps> = ({ stats }) => {
 interface ShlinkStatsProps {
   apiUrl: string;
   apiKey: string;
+  shortCode: string; // Required parameter for the short URL
 }
 
 // Main component
-export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey }) => {
+export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey, shortCode }) => {
   const [statsType, setStatsType] = useState<StatsType>('countries');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -277,10 +278,10 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey }) => {
 
   useEffect(() => {
     loadStats();
-  }, [apiUrl, apiKey, statsType, startDate, endDate, excludeBots]);
+  }, [apiUrl, apiKey, shortCode, statsType, startDate, endDate, excludeBots]);
 
   const loadStats = async () => {
-    if (!apiUrl || !apiKey) return;
+    if (!apiUrl || !apiKey || !shortCode) return;
 
     setIsLoading(true);
     setError(null);
@@ -298,7 +299,14 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey }) => {
         options.endDate = format(endDate, "yyyy-MM-dd'T'HH:mm:ssXXX");
       }
 
-      const result = await getVisitStats(apiUrl, apiKey, statsType, options);
+      // Pass the shortCode to the getVisitStats function
+      const result = await getVisitStats(
+        apiUrl,
+        apiKey,
+        shortCode,
+        statsType,
+        options
+      );
       setStats(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load statistics';
@@ -361,9 +369,9 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey }) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Visit Statistics</CardTitle>
+          <CardTitle>Visit Statistics for Short URL: {shortCode}</CardTitle>
           <CardDescription>
-            Analyze traffic to your shortened URLs
+            Analyze traffic to your shortened URL
           </CardDescription>
         </CardHeader>
         <CardContent>

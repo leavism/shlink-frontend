@@ -1,8 +1,45 @@
 // types/api.ts
+export interface CreateShortUrlOptions {
+  longUrl: string;
+  customSlug?: string;
+  domain?: string;
+  tags?: string[];
+  title?: string;
+  maxVisits?: number;
+  validateUrl?: boolean;
+  forwardQuery?: boolean;
+  findIfExists?: boolean;
+  shortCodeLength?: number;
+  validSince?: string;
+  validUntil?: string;
+  crawlable?: boolean;
+}
 
-/**
- * Common pagination interface for API responses
- */
+export interface ShortUrl {
+  shortCode: string;
+  shortUrl: string;
+  longUrl: string;
+  dateCreated: string;
+  visitsCount: number;
+  tags: string[];
+  meta: {
+    validSince?: string;
+    validUntil?: string;
+    maxVisits?: number;
+    title?: string;
+    crawlable?: boolean;
+    forwardQuery?: boolean;
+  };
+  domain?: string;
+}
+
+export interface ShortUrlsResponse {
+  shortUrls: {
+    data: ShortUrl[];
+    pagination: Pagination;
+  };
+}
+
 export interface Pagination {
   currentPage: number;
   pagesCount: number;
@@ -11,156 +48,34 @@ export interface Pagination {
   totalItems: number;
 }
 
-/**
- * Paginated API response structure
- */
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: Pagination;
-}
-
-/**
- * Short URL metadata
- */
-export interface ShortUrlMeta {
-  validSince: string | null;
-  validUntil: string | null;
-  maxVisits: number | null;
-}
-
-/**
- * Short URL model
- */
-export interface ShortUrl {
-  shortCode: string;
-  shortUrl: string;
-  longUrl: string;
-  dateCreated: string;
-  visitsCount: number;
-  tags: string[];
-  domain: string | null;
-  meta: ShortUrlMeta;
-  title?: string;
-  hasRedirectRules?: boolean;
-}
-
-/**
- * Short URLs list response
- */
-export interface ShortUrlsResponse {
-  shortUrls: PaginatedResponse<ShortUrl>;
-}
-
-/**
- * Options for creating a new short URL
- */
-export interface CreateShortUrlOptions {
-  longUrl: string;
-  tags?: string[];
-  validSince?: string;
-  validUntil?: string;
-  customSlug?: string;
-  maxVisits?: number;
-  findIfExists?: boolean;
-  domain?: string;
-  shortCodeLength?: number;
-  validateUrl?: boolean;
-  title?: string;
-}
-
-/**
- * Visit location information
- */
 export interface VisitLocation {
-  cityName: string | null;
-  countryCode: string | null;
-  countryName: string | null;
-  regionName: string | null;
-  timezone: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  countryCode: string;
+  countryName: string;
+  regionName: string;
+  cityName: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  isEmpty: boolean;
 }
 
-/**
- * Visit data model
- */
 export interface Visit {
-  id: string;
-  referer: string | null;
+  referer: string;
   date: string;
-  userAgent: string | null;
+  userAgent: string;
   visitLocation: VisitLocation | null;
-  browser: string | null;
-  browserVersion: string | null;
-  os: string | null;
-  osVersion: string | null;
-  device?: string | null;
   potentialBot: boolean;
+  visitedUrl: string;
+  redirectUrl: string;
 }
 
-/**
- * Visits response
- */
 export interface VisitsResponse {
-  visits: PaginatedResponse<Visit>;
+  visits: {
+    data: Visit[];
+    pagination: Pagination;
+  };
 }
 
-/**
- * Stats item for visualization
- */
-export interface StatsItem {
-  name: string;
-  count: number;
-}
-
-/**
- * Time-based stats item
- */
-export interface TimeBasedStatsItem {
-  date?: string;
-  month?: string;
-  count: number;
-}
-
-/**
- * Stats summary counts
- */
-export interface StatsSummary {
-  total: number;
-  nonBots: number;
-  bots: number;
-}
-
-/**
- * Stats types supported by the API
- */
-export type StatsType = 'countries' | 'cities' | 'browsers' | 'os' | 'referrers' | 'days' | 'months';
-
-/**
- * Stats response based on type
- */
-export interface StatsResponse extends StatsSummary {
-  stats: Array<StatsItem | TimeBasedStatsItem>;
-}
-
-/**
- * Tag with usage count
- */
-export interface Tag {
-  tag: string;
-  count: number;
-}
-
-/**
- * Tags response
- */
-export interface TagsResponse {
-  tags: PaginatedResponse<Tag>;
-}
-
-/**
- * Options for fetching visits
- */
 export interface VisitsOptions {
   page?: number;
   itemsPerPage?: number;
@@ -170,9 +85,19 @@ export interface VisitsOptions {
   excludeBots?: boolean;
 }
 
-/**
- * Options for fetching stats
- */
+export interface StatsItem {
+  name: string;
+  count: number;
+}
+
+export interface TimeBasedStatsItem {
+  date?: string;
+  month?: string;
+  count: number;
+}
+
+export type StatsType = 'countries' | 'cities' | 'browsers' | 'os' | 'referrers' | 'days' | 'months';
+
 export interface StatsOptions {
   startDate?: string;
   endDate?: string;
@@ -180,15 +105,28 @@ export interface StatsOptions {
   excludeBots?: boolean;
 }
 
-/**
- * Options for generating QR codes
- */
+export interface StatsResponse {
+  stats: (StatsItem | TimeBasedStatsItem)[];
+  total: number;
+  nonBots: number;
+  bots: number;
+}
+
+export interface TagsResponse {
+  tags: {
+    data: string[];
+    stats?: {
+      [tag: string]: number;
+    };
+  };
+}
+export interface Tag {
+  tag: string;
+  count: number;
+}
 export interface QrCodeOptions {
   size?: number;
   format?: 'png' | 'svg';
   margin?: number;
   domain?: string;
-  color?: string;
-  backgroundColor?: string;
-  logo?: string;
 }
