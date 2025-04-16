@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { AppShell } from "@/components/layout/app-shell"
-import { DashboardOverview } from "@/components/dashboard/dashboard-overview"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ApiSettings } from "@/components/api-settings"
+import { AppShell } from "@/components/layout/app-shell"
 
-export default function Dashboard() {
+export default function SettingsPage() {
   const [apiKey, setApiKey] = useState<string>("")
   const [apiUrl, setApiUrl] = useState<string>("")
   const [isConfigured, setIsConfigured] = useState<boolean>(false)
@@ -32,26 +31,22 @@ export default function Dashboard() {
 
   return (
     <AppShell apiConfigured={isConfigured}>
-      {!isConfigured ? (
-        <Card className="max-w-md mx-auto">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">Configure your Shlink API connection settings</p>
+        </div>
+
+        <Card>
           <CardHeader>
-            <CardTitle>Welcome to Short link Dashboard</CardTitle>
-            <CardDescription>To get started, please configure your Shlink API settings</CardDescription>
+            <CardTitle>API Configuration</CardTitle>
+            <CardDescription>Connect to your Shlink instance by providing the API URL and key</CardDescription>
           </CardHeader>
           <CardContent>
             <ApiSettings initialApiUrl={apiUrl} initialApiKey={apiKey} onSave={saveSettings} />
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Overview of your Shlink URL shortener statistics</p>
-          </div>
-
-          <DashboardOverview apiUrl={apiUrl} apiKey={apiKey} />
-        </div>
-      )}
+      </div>
     </AppShell>
   )
 }

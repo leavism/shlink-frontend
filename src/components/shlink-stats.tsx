@@ -1,47 +1,27 @@
-// components/shlink-stats.tsx
-"use client";
+"use client"
 
-import { useState, useEffect, FC } from 'react';
-import {
-  Calendar,
-  FilterX,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import {
-  BarChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Bar,
-  ResponsiveContainer,
-  Cell,
-  LineChart as RechartLineChart,
-  Line
-} from 'recharts';
-import { getVisitStats } from '@/lib/api-service';
-import { StatsItem, StatsOptions, StatsResponse, StatsType, TimeBasedStatsItem } from '@/types/api';
+import { useState, useEffect, type FC } from "react"
+import { Calendar, FilterX } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
+import { LineChart, Line, BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { getVisitStats } from "@/lib/api-service"
+import type { StatsItem, StatsOptions, StatsResponse, StatsType, TimeBasedStatsItem } from "@/types/api"
 
 interface DateRangeSelectorProps {
-  startDate: Date | undefined;
-  endDate: Date | undefined;
-  onStartDateChange: (date: Date | undefined) => void;
-  onEndDateChange: (date: Date | undefined) => void;
-  onClear: () => void;
+  startDate: Date | undefined
+  endDate: Date | undefined
+  onStartDateChange: (date: Date | undefined) => void
+  onEndDateChange: (date: Date | undefined) => void
+  onClear: () => void
 }
 
 // Helper component for date range selection
@@ -50,7 +30,7 @@ const DateRangeSelector: FC<DateRangeSelectorProps> = ({
   endDate,
   onStartDateChange,
   onEndDateChange,
-  onClear
+  onClear,
 }) => {
   return (
     <div className="flex space-x-4 mb-4">
@@ -58,21 +38,13 @@ const DateRangeSelector: FC<DateRangeSelectorProps> = ({
         <Label className="text-sm mb-1 block">Start Date</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left font-normal"
-            >
+            <Button variant="outline" className="w-full justify-start text-left font-normal">
               <Calendar className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, 'PPP') : "Select date"}
+              {startDate ? format(startDate, "PPP") : "Select date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
-            <CalendarComponent
-              mode="single"
-              selected={startDate}
-              onSelect={onStartDateChange}
-              initialFocus
-            />
+            <CalendarComponent mode="single" selected={startDate} onSelect={onStartDateChange} initialFocus />
           </PopoverContent>
         </Popover>
       </div>
@@ -81,21 +53,13 @@ const DateRangeSelector: FC<DateRangeSelectorProps> = ({
         <Label className="text-sm mb-1 block">End Date</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left font-normal"
-            >
+            <Button variant="outline" className="w-full justify-start text-left font-normal">
               <Calendar className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, 'PPP') : "Select date"}
+              {endDate ? format(endDate, "PPP") : "Select date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
-            <CalendarComponent
-              mode="single"
-              selected={endDate}
-              onSelect={onEndDateChange}
-              initialFocus
-            />
+            <CalendarComponent mode="single" selected={endDate} onSelect={onEndDateChange} initialFocus />
           </PopoverContent>
         </Popover>
       </div>
@@ -106,127 +70,16 @@ const DateRangeSelector: FC<DateRangeSelectorProps> = ({
         </Button>
       </div>
     </div>
-  );
-};
-
-interface VisitsBarChartProps {
-  data: StatsItem[];
-  dataKey?: string;
-  nameKey?: string;
-  color?: string;
+  )
 }
-
-// Bar chart component for visualization
-const VisitsBarChart: FC<VisitsBarChartProps> = ({
-  data,
-  dataKey = 'count',
-  nameKey = 'name',
-  color = '#4f46e5'
-}) => {
-  if (!data || data.length === 0) {
-    return <div className="text-center py-8 text-gray-500">No data available</div>;
-  }
-
-  return (
-    <div className="h-80 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          margin={{
-            top: 20,
-            right: 20,
-            left: 20,
-            bottom: 60,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey={nameKey}
-            angle={-45}
-            textAnchor="end"
-            height={60}
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis />
-          <RechartsTooltip
-            formatter={(value: number) => [`${value} visits`, 'Visits']}
-            labelFormatter={(label: string) => `${label}`}
-          />
-          <Bar dataKey={dataKey} fill={color}>
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-interface VisitsLineChartProps {
-  data: TimeBasedStatsItem[];
-  dataKey?: string;
-  nameKey?: string;
-  color?: string;
-}
-
-// Line chart component for time series data
-const VisitsLineChart: FC<VisitsLineChartProps> = ({
-  data,
-  dataKey = 'count',
-  nameKey = 'date',
-  color = '#4f46e5'
-}) => {
-  if (!data || data.length === 0) {
-    return <div className="text-center py-8 text-gray-500">No data available</div>;
-  }
-
-  return (
-    <div className="h-80 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartLineChart
-          data={data}
-          margin={{
-            top: 20,
-            right: 20,
-            left: 20,
-            bottom: 60,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey={nameKey}
-            angle={-45}
-            textAnchor="end"
-            height={60}
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis />
-          <RechartsTooltip
-            formatter={(value: number) => [`${value} visits`, 'Visits']}
-            labelFormatter={(label: string) => `${label}`}
-          />
-          <Line
-            type="monotone"
-            dataKey={dataKey}
-            stroke={color}
-            strokeWidth={2}
-            dot={{ stroke: color, strokeWidth: 2, r: 4 }}
-            activeDot={{ stroke: color, strokeWidth: 2, r: 6 }}
-          />
-        </RechartLineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
 
 interface StatsSummaryProps {
-  stats: StatsResponse | null;
+  stats: StatsResponse | null
 }
 
 // Stats summary cards
 const StatsSummary: FC<StatsSummaryProps> = ({ stats }) => {
-  if (!stats) return null;
+  if (!stats) return null
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -257,132 +110,143 @@ const StatsSummary: FC<StatsSummaryProps> = ({ stats }) => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
 interface ShlinkStatsProps {
-  apiUrl: string;
-  apiKey: string;
-  shortCode: string; // Required parameter for the short URL
+  apiUrl: string
+  apiKey: string
+  shortCode: string // Required parameter for the short URL
 }
 
 // Main component
 export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey, shortCode }) => {
-  const [statsType, setStatsType] = useState<StatsType>('countries');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [excludeBots, setExcludeBots] = useState<boolean>(true);
-  const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [statsType, setStatsType] = useState<StatsType>("countries")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined)
+  const [excludeBots, setExcludeBots] = useState<boolean>(true)
+  const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadStats();
-  }, [apiUrl, apiKey, shortCode, statsType, startDate, endDate, excludeBots]);
+    loadStats()
+  }, [apiUrl, apiKey, shortCode, statsType, startDate, endDate, excludeBots])
 
   const loadStats = async () => {
-    if (!apiUrl || !apiKey || !shortCode) return;
+    if (!apiUrl || !apiKey || !shortCode) return
 
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
 
     try {
       const options: StatsOptions = {
-        excludeBots
-      };
+        excludeBots,
+      }
 
       if (startDate) {
-        options.startDate = format(startDate, "yyyy-MM-dd'T'HH:mm:ssXXX");
+        options.startDate = format(startDate, "yyyy-MM-dd'T'HH:mm:ssXXX")
       }
 
       if (endDate) {
-        options.endDate = format(endDate, "yyyy-MM-dd'T'HH:mm:ssXXX");
+        options.endDate = format(endDate, "yyyy-MM-dd'T'HH:mm:ssXXX")
       }
 
       // Pass the shortCode to the getVisitStats function
-      const result = await getVisitStats(
-        apiUrl,
-        apiKey,
-        shortCode,
-        statsType,
-        options
-      );
-      setStats(result);
+      const result = await getVisitStats(apiUrl, apiKey, shortCode, statsType, options)
+      setStats(result)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load statistics';
-      setError(errorMessage);
-      console.error('Failed to load stats:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to load statistics"
+      setError(errorMessage)
+      console.error("Failed to load stats:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const clearDateRange = () => {
-    setStartDate(undefined);
-    setEndDate(undefined);
-  };
+    setStartDate(undefined)
+    setEndDate(undefined)
+  }
 
   // Format data for charts based on stats type
   const formatChartData = () => {
-    if (!stats || !stats.stats) return [];
+    if (!stats || !stats.stats) return []
 
     switch (statsType) {
-      case 'countries':
-      case 'cities':
+      case "countries":
+      case "cities":
         // Remove "Unknown" entry and sort by visit count
-        return [...stats.stats.filter(item => (item as StatsItem).name !== 'Unknown')]
+        return [...stats.stats.filter((item) => (item as StatsItem).name !== "Unknown")]
           .sort((a, b) => (b as StatsItem).count - (a as StatsItem).count)
-          .slice(0, 15); // Limit to top 15
+          .slice(0, 15) // Limit to top 15
+          .map((item) => ({
+            name: (item as StatsItem).name,
+            value: (item as StatsItem).count,
+          }))
 
-      case 'browsers':
-      case 'os':
-      case 'referrers':
+      case "browsers":
+      case "os":
+      case "referrers":
         return [...stats.stats]
           .sort((a, b) => (b as StatsItem).count - (a as StatsItem).count)
-          .slice(0, 15); // Limit to top 15
+          .slice(0, 15) // Limit to top 15
+          .map((item) => ({
+            name: (item as StatsItem).name,
+            value: (item as StatsItem).count,
+          }))
 
-      case 'days':
-      case 'months':
-        return [...stats.stats];
+      case "days":
+      case "months":
+        return [...stats.stats].map((item) => ({
+          name: (item as TimeBasedStatsItem).date || (item as TimeBasedStatsItem).month || "",
+          value: (item as TimeBasedStatsItem).count,
+        }))
 
       default:
-        return stats.stats;
+        return stats.stats.map((item) => ({
+          name: (item as StatsItem).name || "",
+          value: (item as StatsItem).count,
+        }))
     }
-  };
+  }
 
   const formatStatsTitle = () => {
     switch (statsType) {
-      case 'countries': return 'Visits by Country';
-      case 'cities': return 'Visits by City';
-      case 'browsers': return 'Visits by Browser';
-      case 'os': return 'Visits by Operating System';
-      case 'referrers': return 'Visits by Referrer';
-      case 'days': return 'Visits by Day';
-      case 'months': return 'Visits by Month';
-      default: return 'Visit Statistics';
+      case "countries":
+        return "Visits by Country"
+      case "cities":
+        return "Visits by City"
+      case "browsers":
+        return "Visits by Browser"
+      case "os":
+        return "Visits by Operating System"
+      case "referrers":
+        return "Visits by Referrer"
+      case "days":
+        return "Visits by Day"
+      case "months":
+        return "Visits by Month"
+      default:
+        return "Visit Statistics"
     }
-  };
+  }
 
-  const chartData = formatChartData();
+  const chartData = formatChartData()
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Visit Statistics for Short URL: {shortCode}</CardTitle>
-          <CardDescription>
-            Analyze traffic to your shortened URL
-          </CardDescription>
+          <CardDescription>Analyze traffic to your shortened URL</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-4 md:items-end space-y-4 md:space-y-0">
               <div className="space-y-1 flex-1">
                 <Label htmlFor="statsType">Statistics Type</Label>
-                <Select
-                  value={statsType}
-                  onValueChange={(value) => setStatsType(value as StatsType)}
-                >
+                <Select value={statsType} onValueChange={(value) => setStatsType(value as StatsType)}>
                   <SelectTrigger id="statsType">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -399,11 +263,7 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey, shortCode })
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="excludeBots"
-                  checked={excludeBots}
-                  onCheckedChange={setExcludeBots}
-                />
+                <Switch id="excludeBots" checked={excludeBots} onCheckedChange={setExcludeBots} />
                 <Label htmlFor="excludeBots">Exclude bots</Label>
               </div>
             </div>
@@ -423,11 +283,7 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey, shortCode })
             ) : error ? (
               <div className="p-4 text-center text-red-500">
                 <p>{error}</p>
-                <Button
-                  variant="outline"
-                  className="mt-2"
-                  onClick={loadStats}
-                >
+                <Button variant="outline" className="mt-2" onClick={loadStats}>
                   Try Again
                 </Button>
               </div>
@@ -440,19 +296,40 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey, shortCode })
                     <CardTitle>{formatStatsTitle()}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {statsType === 'days' || statsType === 'months' ? (
-                      <VisitsLineChart
-                        data={chartData as TimeBasedStatsItem[]}
-                        dataKey="count"
-                        nameKey={statsType === 'days' ? 'date' : 'month'}
-                      />
-                    ) : (
-                      <VisitsBarChart
-                        data={chartData as StatsItem[]}
-                        dataKey="count"
-                        nameKey="name"
-                      />
-                    )}
+                    <ChartContainer
+                      config={{
+                        value: {
+                          label: "Visits",
+                          color: "hsl(var(--chart-1))",
+                        },
+                      }}
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        {statsType === "days" || statsType === "months" ? (
+                          <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <ChartTooltip />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="var(--color-value)"
+                              strokeWidth={2}
+                              activeDot={{ r: 8 }}
+                            />
+                          </LineChart>
+                        ) : (
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <ChartTooltip />
+                            <Bar dataKey="value" fill="var(--color-value)" />
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                    </ChartContainer>
                   </CardContent>
                 </Card>
               </>
@@ -461,5 +338,5 @@ export const ShlinkStats: FC<ShlinkStatsProps> = ({ apiUrl, apiKey, shortCode })
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}

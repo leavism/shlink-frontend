@@ -1,130 +1,126 @@
-// components/short-url-list.tsx
-"use client";
+"use client"
 
-import { useState, useEffect, FC } from 'react';
-import {
-  BarChart as BarChartIcon,
-  Copy,
-  ExternalLink,
-  Link as LinkIcon,
-  QrCode,
-  SearchIcon,
-  Trash
-} from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import type React from "react"
+import { useState, useEffect, type FC } from "react"
+import { BarChartIcon, Copy, ExternalLink, LinkIcon, QrCode, SearchIcon, Trash } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
-} from '@/components/ui/pagination';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
-import { getShortUrls, deleteShortUrl, getVisits, getQrCode, updateShortUrl } from '@/lib/api-service';
-import { ShortUrl, Visit } from '@/types/api';
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
+import { getShortUrls, deleteShortUrl, getVisits, getQrCode, updateShortUrl } from "@/lib/api-service"
+import type { ShortUrl, Visit } from "@/types/api"
+import { toast } from "sonner"
 
 // Helper functions to parse user agent strings
 function parseBrowser(userAgent: string): string {
-  if (!userAgent) return 'Unknown';
+  if (!userAgent) return "Unknown"
 
   const browserRegexes = [
-    { name: 'Firefox', regex: /Firefox\/([0-9.]+)/ },
-    { name: 'Chrome', regex: /Chrome\/([0-9.]+)/ },
-    { name: 'Safari', regex: /Safari\/([0-9.]+)/ },
-    { name: 'Edge', regex: /Edg(e)?\/([0-9.]+)/ },
-    { name: 'Internet Explorer', regex: /MSIE|Trident/ }
-  ];
+    { name: "Firefox", regex: /Firefox\/([0-9.]+)/ },
+    { name: "Chrome", regex: /Chrome\/([0-9.]+)/ },
+    { name: "Safari", regex: /Safari\/([0-9.]+)/ },
+    { name: "Edge", regex: /Edg(e)?\/([0-9.]+)/ },
+    { name: "Internet Explorer", regex: /MSIE|Trident/ },
+  ]
 
   for (const browser of browserRegexes) {
     if (browser.regex.test(userAgent)) {
-      return browser.name;
+      return browser.name
     }
   }
 
-  return 'Unknown';
+  return "Unknown"
 }
 
 function parseOS(userAgent: string): string {
-  if (!userAgent) return 'Unknown';
+  if (!userAgent) return "Unknown"
 
   const osRegexes = [
-    { name: 'Windows', regex: /Windows NT/ },
-    { name: 'macOS', regex: /Mac OS X/ },
-    { name: 'iOS', regex: /iPhone|iPad|iPod/ },
-    { name: 'Android', regex: /Android/ },
-    { name: 'Linux', regex: /Linux/ }
-  ];
+    { name: "Windows", regex: /Windows NT/ },
+    { name: "macOS", regex: /Mac OS X/ },
+    { name: "iOS", regex: /iPhone|iPad|iPod/ },
+    { name: "Android", regex: /Android/ },
+    { name: "Linux", regex: /Linux/ },
+  ]
 
   for (const os of osRegexes) {
     if (os.regex.test(userAgent)) {
-      return os.name;
+      return os.name
     }
   }
 
-  return 'Unknown';
+  return "Unknown"
 }
 
 interface QrCodeDialogProps {
-  shortUrl: ShortUrl | null;
-  apiUrl: string;
-  isOpen: boolean;
-  onClose: () => void;
+  shortUrl: ShortUrl | null
+  apiUrl: string
+  isOpen: boolean
+  onClose: () => void
 }
 
 // QR Code Dialog component
 const QrCodeDialog: FC<QrCodeDialogProps> = ({ shortUrl, apiUrl, isOpen, onClose }) => {
-  const [size, setSize] = useState<number>(300);
+  const [size, setSize] = useState<number>(300)
 
-  if (!shortUrl) return null;
+  if (!shortUrl) return null
 
   const qrCodeUrl = getQrCode(apiUrl, shortUrl.shortCode, {
     size,
-    domain: shortUrl.domain || undefined
-  });
+    domain: shortUrl.domain || undefined,
+  })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>QR Code for {shortUrl.shortUrl}</DialogTitle>
-          <DialogDescription>
-            Scan this QR code to access the shortened URL
-          </DialogDescription>
+          <DialogDescription>Scan this QR code to access the shortened URL</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center py-4">
           <img
-            src={qrCodeUrl}
+            src={qrCodeUrl || "/placeholder.svg"}
             alt={`QR Code for ${shortUrl.shortUrl}`}
             className="mb-4 border border-gray-200 rounded-lg"
           />
 
           <div className="w-full flex items-center space-x-4">
-            <Label htmlFor="qr-size" className="min-w-20">Size (px):</Label>
+            <Label htmlFor="qr-size" className="min-w-20">
+              Size (px):
+            </Label>
             <Input
               id="qr-size"
               type="number"
@@ -148,107 +144,118 @@ const QrCodeDialog: FC<QrCodeDialogProps> = ({ shortUrl, apiUrl, isOpen, onClose
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
 interface UrlDetailsDialogProps {
-  shortUrl: ShortUrl | null;
-  apiUrl: string;
-  apiKey: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onUpdate?: () => void;
+  shortUrl: ShortUrl | null
+  apiUrl: string
+  apiKey: string
+  isOpen: boolean
+  onClose: () => void
+  onUpdate?: () => void
 }
 
 // URL Details Dialog component
-const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
-  shortUrl,
-  apiUrl,
-  apiKey,
-  isOpen,
-  onClose,
-  onUpdate
-}) => {
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [tags, setTags] = useState<string[]>(shortUrl?.tags || []);
-  const [newTag, setNewTag] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<string>('details');
+const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({ shortUrl, apiUrl, apiKey, isOpen, onClose, onUpdate }) => {
+  const [visits, setVisits] = useState<Visit[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [tags, setTags] = useState<string[]>(shortUrl?.tags || [])
+  const [newTag, setNewTag] = useState<string>("")
+  const [activeTab, setActiveTab] = useState<string>("details")
 
   useEffect(() => {
-    if (isOpen && shortUrl && activeTab === 'visits') {
-      loadVisits();
+    if (isOpen && shortUrl && activeTab === "visits") {
+      loadVisits()
     }
-  }, [isOpen, shortUrl, activeTab]);
+  }, [isOpen, shortUrl, activeTab])
 
   useEffect(() => {
     if (shortUrl) {
-      setTags(shortUrl.tags || []);
+      setTags(shortUrl.tags || [])
     }
-  }, [shortUrl]);
+  }, [shortUrl])
 
   const loadVisits = async () => {
-    if (!shortUrl) return;
+    if (!shortUrl) return
 
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       const result = await getVisits(apiUrl, apiKey, shortUrl.shortCode, {
         domain: shortUrl.domain || undefined,
-        itemsPerPage: 50
-      });
-      setVisits(result.visits.data);
+        itemsPerPage: 50,
+      })
+      setVisits(result.visits.data)
     } catch (error) {
-      console.error('Failed to load visits:', error);
+      console.error("Failed to load visits:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleAddTag = async () => {
-    if (!newTag.trim() || !shortUrl) return;
+    if (!newTag.trim() || !shortUrl) return
 
-    const newTags = [...tags, newTag.trim()];
-    setTags(newTags);
-    setNewTag('');
+    const newTags = [...tags, newTag.trim()]
+    setTags(newTags)
+    setNewTag("")
 
     try {
-      await updateShortUrl(apiUrl, apiKey, shortUrl.shortCode, {
-        tags: newTags
-      }, shortUrl.domain || undefined);
+      await updateShortUrl(
+        apiUrl,
+        apiKey,
+        shortUrl.shortCode,
+        {
+          tags: newTags,
+        },
+        shortUrl.domain || undefined,
+      )
 
       if (onUpdate) {
-        onUpdate();
+        onUpdate()
       }
+
+      toast.success(`Tag "${newTag.trim()}" added`)
     } catch (error) {
-      console.error('Failed to update tags:', error);
+      console.error("Failed to update tags:", error)
+      toast.error("Failed to update tags")
     }
-  };
+  }
 
   const handleRemoveTag = async (tagToRemove: string) => {
-    if (!shortUrl) return;
+    if (!shortUrl) return
 
-    const newTags = tags.filter(tag => tag !== tagToRemove);
-    setTags(newTags);
+    const newTags = tags.filter((tag) => tag !== tagToRemove)
+    setTags(newTags)
 
     try {
-      await updateShortUrl(apiUrl, apiKey, shortUrl.shortCode, {
-        tags: newTags
-      }, shortUrl.domain || undefined);
+      await updateShortUrl(
+        apiUrl,
+        apiKey,
+        shortUrl.shortCode,
+        {
+          tags: newTags,
+        },
+        shortUrl.domain || undefined,
+      )
 
       if (onUpdate) {
-        onUpdate();
+        onUpdate()
       }
-    } catch (error) {
-      console.error('Failed to update tags:', error);
-    }
-  };
 
-  if (!shortUrl) return null;
+      toast.success(`Tag "${tagToRemove}" removed`)
+    } catch (error) {
+      console.error("Failed to update tags:", error)
+      toast.error("Failed to update tags")
+    }
+  }
+
+  if (!shortUrl) return null
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
+    const date = new Date(dateString)
+    return date.toLocaleString()
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -281,7 +288,10 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 ml-2"
-                            onClick={() => navigator.clipboard.writeText(shortUrl.shortUrl)}
+                            onClick={() => {
+                              navigator.clipboard.writeText(shortUrl.shortUrl)
+                              toast.success("URL copied to clipboard")
+                            }}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -303,7 +313,7 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 ml-2"
-                            onClick={() => window.open(shortUrl.longUrl, '_blank')}
+                            onClick={() => window.open(shortUrl.longUrl, "_blank")}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
@@ -362,7 +372,7 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-gray-500">No tags</span>
+                    <span className="text-muted-foreground">No tags</span>
                   )}
                 </div>
               </div>
@@ -394,21 +404,17 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                       <TableCell>{parseBrowser(visit.userAgent)}</TableCell>
                       <TableCell>{parseOS(visit.userAgent)}</TableCell>
                       <TableCell>
-                        {visit.visitLocation ? (
-                          `${visit.visitLocation.countryName || ''} ${visit.visitLocation.cityName || ''}`
-                        ) : (
-                          'Unknown'
-                        )}
+                        {visit.visitLocation
+                          ? `${visit.visitLocation.countryName || ""} ${visit.visitLocation.cityName || ""}`
+                          : "Unknown"}
                       </TableCell>
-                      <TableCell className="truncate max-w-[200px]">
-                        {visit.referer || 'Direct'}
-                      </TableCell>
+                      <TableCell className="truncate max-w-[200px]">{visit.referer || "Direct"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-center py-4 text-gray-500">No visits recorded yet</p>
+              <p className="text-center py-4 text-muted-foreground">No visits recorded yet</p>
             )}
           </TabsContent>
 
@@ -421,7 +427,7 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                     id="new-tag"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
                     placeholder="Enter tag name..."
                   />
                 </div>
@@ -446,7 +452,7 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-gray-500">No tags</span>
+                    <span className="text-muted-foreground">No tags</span>
                   )}
                 </div>
               </div>
@@ -455,109 +461,110 @@ const UrlDetailsDialog: FC<UrlDetailsDialogProps> = ({
         </Tabs>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
 interface ShortUrlListProps {
-  apiUrl: string;
-  apiKey: string;
-  onViewStats?: (shortCode: string) => void;
+  apiUrl: string
+  apiKey: string
+  onViewStats?: (shortCode: string) => void
 }
 
 // Main ShortUrlList component
 export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStats }) => {
-  const [shortUrls, setShortUrls] = useState<ShortUrl[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [page, setPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [itemsPerPage] = useState<number>(10);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedUrl, setSelectedUrl] = useState<ShortUrl | null>(null);
-  const [isQrDialogOpen, setIsQrDialogOpen] = useState<boolean>(false);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState<boolean>(false);
-  const [selectedUrlForDelete, setSelectedUrlForDelete] = useState<ShortUrl | null>(null);
+  const [shortUrls, setShortUrls] = useState<ShortUrl[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [page, setPage] = useState<number>(1)
+  const [totalPages, setTotalPages] = useState<number>(1)
+  const [itemsPerPage] = useState<number>(10)
+  const [searchTerm, setSearchTerm] = useState<string>("")
+  const [selectedUrl, setSelectedUrl] = useState<ShortUrl | null>(null)
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState<boolean>(false)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState<boolean>(false)
+  const [selectedUrlForDelete, setSelectedUrlForDelete] = useState<ShortUrl | null>(null)
 
   useEffect(() => {
-    loadShortUrls();
-  }, [apiUrl, apiKey, page, itemsPerPage]);
+    loadShortUrls()
+
+    // Add event listener to the refresh button
+    const refreshButton = document.getElementById("refresh-urls")
+    if (refreshButton) {
+      refreshButton.addEventListener("click", loadShortUrls)
+    }
+
+    return () => {
+      if (refreshButton) {
+        refreshButton.removeEventListener("click", loadShortUrls)
+      }
+    }
+  }, [apiUrl, apiKey, page, itemsPerPage])
 
   const loadShortUrls = async () => {
-    if (!apiUrl || !apiKey) return;
+    if (!apiUrl || !apiKey) return
 
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const result = await getShortUrls(
-        apiUrl,
-        apiKey,
-        page,
-        itemsPerPage,
-        searchTerm
-      );
+      const result = await getShortUrls(apiUrl, apiKey, page, itemsPerPage, searchTerm)
 
-      setShortUrls(result.shortUrls.data || []);
-      setTotalPages(Math.ceil(result.shortUrls.pagination.totalItems / itemsPerPage));
+      setShortUrls(result.shortUrls.data || [])
+      setTotalPages(Math.ceil(result.shortUrls.pagination.totalItems / itemsPerPage))
     } catch (error) {
-      console.error('Failed to load short URLs:', error);
+      console.error("Failed to load short URLs:", error)
+      toast.error("Failed to load short URLs")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    loadShortUrls();
-  };
+    e.preventDefault()
+    setPage(1)
+    loadShortUrls()
+  }
 
   const handleDelete = async () => {
-    if (!selectedUrlForDelete) return;
+    if (!selectedUrlForDelete) return
 
     try {
-      await deleteShortUrl(
-        apiUrl,
-        apiKey,
-        selectedUrlForDelete.shortCode,
-        selectedUrlForDelete.domain || undefined
-      );
+      await deleteShortUrl(apiUrl, apiKey, selectedUrlForDelete.shortCode, selectedUrlForDelete.domain || undefined)
 
       // Refresh the list
-      loadShortUrls();
-
-      setSelectedUrlForDelete(null);
+      loadShortUrls()
+      toast.success("URL deleted successfully")
+      setSelectedUrlForDelete(null)
     } catch (error) {
-      console.error('Failed to delete short URL:', error);
+      console.error("Failed to delete short URL:", error)
+      toast.error("Failed to delete URL")
     }
-  };
+  }
 
   const handleCopyUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    // Add toast notification here if needed
-  };
+    navigator.clipboard.writeText(url)
+    toast.success("URL copied to clipboard")
+  }
 
   const handleViewStats = (shortCode: string) => {
     if (onViewStats) {
-      onViewStats(shortCode);
+      onViewStats(shortCode)
     }
-  };
+  }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
+    const date = new Date(dateString)
+    return date.toLocaleDateString()
+  }
 
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>Your Short URLs</CardTitle>
-          <CardDescription>Manage all your shortened URLs</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+        <CardHeader className="pb-3">
+          <form onSubmit={handleSearch} className="flex gap-2">
             <Input
               placeholder="Search by URL or tags..."
               value={searchTerm}
@@ -569,7 +576,8 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
               Search
             </Button>
           </form>
-
+        </CardHeader>
+        <CardContent>
           {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-12 w-full" />
@@ -592,7 +600,7 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
                 </TableHeader>
                 <TableBody>
                   {shortUrls.map((url) => (
-                    <TableRow key={`${url.domain || 'default'}-${url.shortCode}`}>
+                    <TableRow key={`${url.domain || "default"}-${url.shortCode}`}>
                       <TableCell className="font-mono">{url.shortUrl}</TableCell>
                       <TableCell>{formatDate(url.dateCreated)}</TableCell>
                       <TableCell>{url.visitsCount}</TableCell>
@@ -615,11 +623,7 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
                           <div className="flex justify-end gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleCopyUrl(url.shortUrl)}
-                                >
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyUrl(url.shortUrl)}>
                                   <Copy className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
@@ -632,8 +636,8 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    setSelectedUrl(url);
-                                    setIsQrDialogOpen(true);
+                                    setSelectedUrl(url)
+                                    setIsQrDialogOpen(true)
                                   }}
                                 >
                                   <QrCode className="h-4 w-4" />
@@ -648,8 +652,8 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    setSelectedUrl(url);
-                                    setIsDetailsDialogOpen(true);
+                                    setSelectedUrl(url)
+                                    setIsDetailsDialogOpen(true)
                                   }}
                                 >
                                   <BarChartIcon className="h-4 w-4" />
@@ -661,11 +665,7 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
                             {onViewStats && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleViewStats(url.shortCode)}
-                                  >
+                                  <Button variant="ghost" size="icon" onClick={() => handleViewStats(url.shortCode)}>
                                     <BarChartIcon className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
@@ -711,11 +711,9 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
             </div>
           ) : (
             <div className="text-center py-8">
-              <LinkIcon className="h-12 w-12 text-gray-400 mx-auto" />
+              <LinkIcon className="h-12 w-12 text-muted-foreground mx-auto" />
               <h3 className="mt-4 text-lg font-medium">No short URLs found</h3>
-              <p className="text-gray-500 mt-2">
-                Create your first short URL to get started
-              </p>
+              <p className="text-muted-foreground mt-2">Create your first short URL to get started</p>
             </div>
           )}
         </CardContent>
@@ -725,31 +723,28 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={() => page > 1 ? setPage(page - 1) : undefined}
+                    onClick={() => (page > 1 ? setPage(page - 1) : undefined)}
                     className={page === 1 ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
 
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNumber = page > 3 ? page - 3 + i + 1 : i + 1;
+                  const pageNumber = page > 3 ? page - 3 + i + 1 : i + 1
                   if (pageNumber <= totalPages) {
                     return (
                       <PaginationItem key={pageNumber}>
-                        <PaginationLink
-                          onClick={() => setPage(pageNumber)}
-                          isActive={page === pageNumber}
-                        >
+                        <PaginationLink onClick={() => setPage(pageNumber)} isActive={page === pageNumber}>
                           {pageNumber}
                         </PaginationLink>
                       </PaginationItem>
-                    );
+                    )
                   }
-                  return null;
+                  return null
                 })}
 
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() => page < totalPages ? setPage(page + 1) : undefined}
+                    onClick={() => (page < totalPages ? setPage(page + 1) : undefined)}
                     className={page === totalPages ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
@@ -777,5 +772,5 @@ export const ShortUrlList: FC<ShortUrlListProps> = ({ apiUrl, apiKey, onViewStat
         onUpdate={loadShortUrls}
       />
     </>
-  );
-};
+  )
+}
